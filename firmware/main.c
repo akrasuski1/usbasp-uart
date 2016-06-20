@@ -289,29 +289,14 @@ uchar usbFunctionRead(uchar *data, uchar len) {
 }
 
 uchar usbFunctionWrite(uchar *data, uchar len) {
-
-	uchar retVal = 0;
-	uchar i;
-
-	/* check if programmer is in correct write state */
-	if (
-			(prog_state != PROG_STATE_WRITEFLASH) && 
-			(prog_state	!= PROG_STATE_WRITEEEPROM) &&
-		   	(prog_state != PROG_STATE_TPI_WRITE) &&
-			(prog_state != PROG_STATE_UART_TX)
-	) {
-		return 0xff;
-	}
-
 	if(prog_state==PROG_STATE_UART_TX){
-		for(uint8_t rd=0;rd<len;rd++){
-			if( !uart_putc(data[rd]) ){
-				// This should not happen, since computer should
-				// request correct number of bytes. If request is bad,
-				// return anything.
-				break;
-			}
+		if(len){
+			uart_putsn(data, len);
+			// This function should succeed, since computer should
+			// request correct number of bytes. If request is bad,
+			// return anything.
 		}
+
 		prog_nbytes-=len;
 		if(prog_nbytes<=0){
 			prog_state=PROG_STATE_IDLE;
@@ -319,6 +304,21 @@ uchar usbFunctionWrite(uchar *data, uchar len) {
 		}
 		return 0;
 	}
+
+	uchar retVal = 0;
+	uchar i;
+
+	/* check if programmer is in correct write state */
+	// Note: this is done after checking for UART_TX, because we want
+	// super small delay here.
+	if (
+			(prog_state != PROG_STATE_WRITEFLASH) && 
+			(prog_state	!= PROG_STATE_WRITEEEPROM) &&
+		   	(prog_state != PROG_STATE_TPI_WRITE)
+	) {
+		return 0xff;
+	}
+
 
 	if (prog_state == PROG_STATE_TPI_WRITE)
 	{

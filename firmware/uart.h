@@ -14,6 +14,7 @@ void uart_flush_rx();
 
 uint8_t uart_putc(uint8_t c);
 uint8_t uart_getc(uint8_t* c);
+uint8_t uart_putsn(uint8_t* data, uint8_t len);
 
 uint16_t uart_tx_freeplaces();
 void uart_dbg();
