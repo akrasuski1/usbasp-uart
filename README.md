@@ -27,8 +27,8 @@ to install new firmware.
 
 The next step is compiling firmware:
 ```
-cd firmware
-make main.hex
+$ cd firmware
+$ make main.hex
 ```
 A basic script for `avrdude` is also in the makefile, but you will probably need to modify it for your needs. 
 See `firmware/Makefile` for more details (especially ISP and PORT variables). Then, you can `make fuses && make flash`.
@@ -49,13 +49,13 @@ Putting firmware on programmer is not enough though. You still need a way to com
 the device. For this reason, I've created a simple terminal utility working as a UART terminal. Building it should be
 easy, at least on Unix:
 ```
-cd terminal
-make
+$ cd terminal
+$ make
 ```
 
 Running newly compiled binary without arguments shows help:
 ```
-./usbasp_uart 
+$ ./usbasp_uart 
 Usage: ./usbasp_uart [OPTIONS]
 Allows UART communication through modified USBasp.
 Options:
