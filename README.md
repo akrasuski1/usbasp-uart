@@ -38,7 +38,7 @@ detect such weak signal. To fix this problem, you have two options: either desol
 with one of smaller resistance (or even short both ends), or add a second resistor in parallel. I used the
 second option:
 
-![Resistor](resistor.)
+![Resistor](resistor.jpg)
 
 Now your USBasp should be ready for using UART (don't forget to take off JP2 jumper).
 
