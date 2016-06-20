@@ -2,8 +2,8 @@
 
 This repository contains a modification to latest (2011) USBasp firmware. According to official 
 [schematic](http://www.fischl.de/usbasp/bilder/usbasp_circuit.png), the UART
-lines of the ATmega are connected to the ISP socket. The firmware did not seem to use them, however. UART is 
-often used as main debug element in embedded programming, so having programmer double as debugging unit would
+lines of the ATmega are connected to the ISP socket, however the firmware did not seem to use them. UART is 
+often used as main debug element in embedded programming, so having ISP programmer double as debugging unit would
 save much time for amateurs. 
 
 I modified official USBasp code and added UART capabilities. It turned out to be pretty complex task - if we want to
@@ -11,11 +11,12 @@ achieve satisfactory speeds, we have to use ring buffer. But it takes significan
 compared to ordinary fire-and-forget or busy-wait-until-done approaches. Since USB interface is very strict about timing,
 I couldn't afford having interrupts disabled for such a long time. Hence, the ISRs are written partially in assembly,
 and partially in plain C. There have to be many critical sections, since writing and reading pointers is not atomic
-in AVR architecture. I optimized them as much as possible and checked generated assembly - and I'm proud to say that
+in AVR architecture. I optimized them as much as possible (since all of them are basically sections with interrupts
+disabled, and we wante to minimize that time) and checked generated assembly - and I'm proud to say that
 the maximum interrupt latency is less than a couple of processor cycles in worst case, which fits within bounds 
-stated by V-USB library used for communication with computer - 25 cycles. Generated assembly is available as comments
-in `uart.c` file. In practice, the connection with computer is steady and packets are not lost (which is a huge
-improvement from development time, when device would be disconnected after a couple of seconds).
+stated by V-USB library used for communication with computer - 25 cycles. Generated assembly snippets are available 
+as comments in `uart.c` file. In practice, the connection with computer is steady and packets are not lost 
+(which is a huge improvement from development time, when device would be disconnected after a couple of seconds).
 
 ## Installing firmware
 To put new firmware on the USBasp, you need to have a second programmer or other way of ISP programming. You may use
