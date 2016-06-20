@@ -170,6 +170,8 @@ Average speed: 8.061793 kB/s
 ```
 Reading UART using UART-USB confirms that 100000 bytes were successfully sent.
 
+**See update at the bottom of this README - now write speed is bigger.**
+
 To sum up: 
 * max. read speed is approximately 12.4kB/s, which corresponds to constant stream of UART at 124000 baud. Note that
 this result was obtained using artificially slowed UART at baud 250000 and real results may be different. In practice,
