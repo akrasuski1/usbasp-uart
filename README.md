@@ -27,8 +27,8 @@ to install new firmware.
 
 The next step is compiling firmware:
 ```
-cd firmware
-make main.hex
+$ cd firmware
+$ make main.hex
 ```
 A basic script for `avrdude` is also in the makefile, but you will probably need to modify it for your needs. 
 See `firmware/Makefile` for more details (especially ISP and PORT variables). Then, you can `make fuses && make flash`.
@@ -49,13 +49,13 @@ Putting firmware on programmer is not enough though. You still need a way to com
 the device. For this reason, I've created a simple terminal utility working as a UART terminal. Building it should be
 easy, at least on Unix:
 ```
-cd terminal
-make
+$ cd terminal
+$ make
 ```
 
 Running newly compiled binary without arguments shows help:
 ```
-./usbasp_uart 
+$ ./usbasp_uart 
 Usage: ./usbasp_uart [OPTIONS]
 Allows UART communication through modified USBasp.
 Options:
@@ -177,3 +177,27 @@ I've seen some minor losses using constant stream of 125000 (though this is dang
 recommend 57.6k or 76.8k bauds as being pretty fast and fully error-free (in my testing)
 * max. write speed is about 8.0kB/s. Note that at slower baud rates this speed will be dominated by UART sending rate - for
 example, you cannot reach more than 960B/s using baud 9600.
+
+## Benchmark comments
+
+For me, this is a surprising result, for two reasons. First of all, the read works perfectly at slightly higher speeds
+than theoretically calculated maximum. Look at this USB capture of USBasp-UART packets I performed (click to zoom):
+
+![Packets](usb.png)
+
+This screenshot contains exactly one USB frame of data. V-USB library disables all interrupts for the time of servicing
+USB interrupt, so this means UART interrupts will be disabled for almost 110us in this case, which I believe is the worst.
+This means that the minimum delay between received UART characters should be 110us - otherwise one character could arrive
+just after USB interrupt happened and the second one just before USB interrupt finished, overwriting the first.
+110 microseconds correspond to bandwidth of 9.1kB/s, and I was able to get speed of 12.4kB/s, which is more. No characters
+were lost, so either I was very lucky so that described overwrite never happened in those megabytes I've sent to date,
+or there is some effect I didn't account for, which made such speed possible.
+
+The other surprise deals with write speed. I would expect it to be higher than read speed, since there are no such
+problems as I described above - as long as baud is kept high, such as 250000 (like in above tests), sending of characters
+should take only a small amount of time (about 32us per 8 characters). As seen in the picture above, packet containing
+8 bytes takes about 110us of USB non-interruptable time, so in total we should be able to push 8 bytes every 142us.
+While there definitely is some overhead (for example control packets), let's ignore it for simplicity. 142us per 8 bytes
+would mean speed close to 56kB/s - and that is order of magnitude more than what I measured!
+
+I will investigate why this theoretical speed is not reached, and update this README when I know it.
