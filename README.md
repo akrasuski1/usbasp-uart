@@ -178,6 +178,8 @@ recommend 57.6k or 76.8k bauds as being pretty fast and fully error-free (in my 
 * max. write speed is about 8.0kB/s. Note that at slower baud rates this speed will be dominated by UART sending rate - for
 example, you cannot reach more than 960B/s using baud 9600.
 
+## Benchmark comments
+
 For me, this is a surprising result, for two reasons. First of all, the read works perfectly at slightly higher speeds
 than theoretically calculated maximum. Look at this USB capture of USBasp-UART packets I performed (click to zoom):
 
