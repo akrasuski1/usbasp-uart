@@ -81,4 +81,99 @@ on Windows, allowing developer to interface with the driver even on this system.
 (also used in avrdude code, so you probably already have it installed).
 
 ## Benchmark
-TODO
+
+The terminal utility I wrote contains code used for benchmarking UART speed. Although technically we can use any baud
+rate supported by AVR chip at 12Mhz (such as 250000 baud), the ring buffer inside the chip will quickly fill and USB
+bus will saturate, not keeping up with the UART, thus leading to lost characters. Note that this will happen only with
+reading UART - writing to it has built-in flow control, so characters won't be lost in normal situations. When reading
+AND writing, the USB bandwidth will be divided between both directions, thus decreasing both speeds.
+
+In order to test the true speed (the speed at which no characters are lost in practice), I've wrote a simple AVR code
+and put it into a second ATmega:
+```
+#include <avr/io.h>
+#include <util/delay.h>
+
+#define BAUD 250000UL
+#define DLY  80
+
+int main(){
+	UCSR0A=(1<<U2X0);
+	UCSR0B=(1<<RXEN0)|(1<<TXEN0);
+	UCSR0C=(1<<UCSZ01)|(1<<UCSZ00);
+	UBRR0 =F_CPU/8/BAUD-1;
+
+	char c='a';
+	while(1){
+		UDR0=c++;
+		if(c>'z'){c='a';}
+		_delay_us(DLY);
+	}
+}
+```
+Since baud is set to a big value (250000), character sending speed will be dominated by the `_delay_us(DLY)`. By varying
+`DLY` macro, I was able to change true speed and see at which point the transmission starts being lossy.
+
+It turns out the above code, with `DLY` set to 80us is close to optimal. Running benchmark code on it gives the following
+result:
+```
+$ ./usbasp_uart -R -S 100000 -b 250000
+www.fischl.de
+USBasp
+Caps: 41
+Baud prescaler: 5
+Reading...
+3/100000
+33/100000
+64/100000
+94/100000
+131/100000
+145/100000
+176/100000
+206/100000
+237/100000
+[...]
+99892/100000
+99923/100000
+99954/100000
+99985/100000
+100015/100000
+Whole received text:
+uvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrst
+uvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrst
+uvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrst
+[...]
+uvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrst
+uvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrst
+uvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl
+100015 bytes received in 8084ms
+Average speed: 12.371533 kB/s
+```
+Write test:
+```
+$ ./usbasp_uart -W -S 100000 -b 250000www.fischl.de
+USBasp
+Caps: 41
+Baud prescaler: 5
+Writing...
+Received free=255, transmitting 255 bytes
+Received free=255, transmitting 255 bytes
+Received free=255, transmitting 255 bytes
+Received free=255, transmitting 255 bytes
+Received free=255, transmitting 255 bytes
+Received free=255, transmitting 255 bytes
+[...]
+Received free=255, transmitting 255 bytes
+Received free=255, transmitting 75 bytes
+100000 bytes sent in 12404ms
+Average speed: 8.061793 kB/s
+```
+Reading UART using UART-USB confirms that 100000 bytes were successfully sent.
+
+To sum up: 
+* max. read speed is approximately 12.4kB/s, which corresponds to constant stream of UART at 124000 baud. Note that
+this result was obtained using artificially slowed UART at baud 250000 and real results may be different. In practice,
+I've seen some minor losses using constant stream of 125000 (though this is dangerously close to the edge). I can
+recommend 57.6k or 76.8k bauds as being pretty fast and fully error-free (in my testing)
+* max. write speed is about 8.0kB/s. Note that at slower baud rates this speed will be dominated by UART sending rate - for
+example, you cannot reach more than 960B/s using baud 9600.
