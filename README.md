@@ -201,3 +201,18 @@ While there definitely is some overhead (for example control packets), let's ign
 would mean speed close to 56kB/s - and that is order of magnitude more than what I measured!
 
 I will investigate why this theoretical speed is not reached, and update this README when I know it.
+
+#### Update
+
+After studying USB logic dumps, I came to conclusion. Apparently after sending one 8-byte packet (which USBasp ACKs),
+the next 8-byte packet is sent almost immediately (after about 5us). This does not leave enough time for firmware to
+put the first 8 bytes in ring buffer. The USB bus is idle only a small fraction of time - I'd estimate 15-20% or so.
+During remaining 80-85% percent of time AVR cannot be interrupted, since it serves USB. In the 15-20% left, we need to
+send characters in UART ISR (and it's quite long as well, since it uses ring buffer), and finally, process last USB 
+packet and put new characters in the buffer. There is simply not enough time. I've shuffled some functions around and
+optimized them almost as much as I could without resorting to really dirty hacks - but with success! Right now, I'm
+able to send almost twice as much data as previously. The exact speed depends somewhat on baud rate - the UART timing
+makes strange things. For example, for baud 250000, I have now speed 14.0kB/s. If I switch to the biggest speed
+possible - 1.5MB/s - I can squeeze up to 15kB/s through the USB. Going down to 125000, we get throughput of 10.3kB/s - 
+but that decrease is not that surprising, given that UART's speed itself at that baud is just 12.5kB/s and there has to
+be some slowdown on the wires.
