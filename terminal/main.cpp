@@ -186,13 +186,13 @@ int main(int argc, char** argv){
 		}
 		return -1;
 	}
-	if(should_test_read){
-		fprintf(stderr, "Reading...\n");
-		readTest(&usbasp, test_size);
-	}
 	if(should_test_write){
 		fprintf(stderr, "Writing...\n");
 		writeTest(&usbasp, test_size);
+	}
+	if(should_test_read){
+		fprintf(stderr, "Reading...\n");
+		readTest(&usbasp, test_size);
 	}
 	std::vector<std::thread> threads;
 	if(should_read){
