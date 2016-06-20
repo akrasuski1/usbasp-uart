@@ -7,12 +7,12 @@ often used as main debug element in embedded programming, so having ISP programm
 save much time for amateurs. 
 
 I modified official USBasp code and added UART capabilities. It turned out to be pretty complex task - if we want to
-achieve satisfactory speeds, we have to use ring buffer. But it takes significantly more processor time in interrupt
+achieve satisfactory speeds, we have to use ring buffer. But it takes significantly more processor wtime in interrupt
 compared to ordinary fire-and-forget or busy-wait-until-done approaches. Since USB interface is very strict about timing,
 I couldn't afford having interrupts disabled for such a long time. Hence, the ISRs are written partially in assembly,
 and partially in plain C. There have to be many critical sections, since writing and reading pointers is not atomic
 in AVR architecture. I optimized them as much as possible (since all of them are basically sections with interrupts
-disabled, and we wante to minimize that time) and checked generated assembly - and I'm proud to say that
+disabled, and we want to minimize that time) and checked generated assembly - and I'm proud to say that
 the maximum interrupt latency is less than a couple of processor cycles in worst case, which fits within bounds 
 stated by V-USB library used for communication with computer - 25 cycles. Generated assembly snippets are available 
 as comments in `uart.c` file. In practice, the connection with computer is steady and packets are not lost 
