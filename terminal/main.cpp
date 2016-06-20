@@ -6,6 +6,8 @@
 #include <thread>
 #include <vector>
 
+int verbose=0;
+
 void writeTest(USBasp_UART* usbasp, int size){
 	std::string s;
 	char c='a';
@@ -100,6 +102,7 @@ void usage(const char* name){
 	fprintf(stderr, "  -p PARITY set parity (default 0=none, 1=even, 2=odd)\n");
 	fprintf(stderr, "  -B BITS   set byte size in bits, default 8\n");
 	fprintf(stderr, "  -s BITS   set stop bit count, default 1\n");
+	fprintf(stderr, "  -v        increase verbosity\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "If you want to use it as interactive terminal, use %s -rw -b 9600\n", name);
 	exit(0);
@@ -123,7 +126,7 @@ int main(int argc, char** argv){
 	opterr=0;
 	int c;
 
-	while( (c=getopt(argc, argv, "rwRWS:b:p:B:s:"))!=-1){
+	while( (c=getopt(argc, argv, "rwRWS:b:p:B:s:v"))!=-1){
 		switch(c){
 		case 'r':
 			should_read=true;
@@ -170,6 +173,9 @@ int main(int argc, char** argv){
 			case 1: stop=USBASP_UART_STOP_1BIT;	break;
 			case 2: stop=USBASP_UART_STOP_2BIT;	break;
 			}
+			break;
+		case 'v':
+			verbose++;
 			break;
 		default:
 			usage(argv[0]);

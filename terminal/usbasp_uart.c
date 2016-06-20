@@ -11,7 +11,7 @@
 #define	USBASP_SHARED_VID  0x16C0
 #define	USBASP_SHARED_PID  0x05DC
 
-#define dprintf(...) printf(__VA_ARGS__)
+#define dprintf(...) if(verbose>0){fprintf(stderr,__VA_ARGS__);}
 
 static int usbasp_uart_open(USBasp_UART* usbasp);
 static uint32_t usbasp_uart_capabilities(USBasp_UART* usbasp);
@@ -26,13 +26,19 @@ int usbasp_uart_config(USBasp_UART* usbasp, int baud, int flags){
 		return -1;
 	}
 	uint32_t caps=usbasp_uart_capabilities(usbasp);
-	dprintf("Caps: %x\n", caps);
+	dprintf("Capabilities: %x\n", caps);
 	if(!(caps & USBASP_CAP_6_UART)){
 		return USBASP_NO_CAPS;
 	}
 	uint8_t send[4];
-	int presc=12000000/8/baud - 1;
+
+	const int FOSC=12000000;
+	int presc=FOSC/8/baud - 1;
 	dprintf("Baud prescaler: %d\n", presc);
+	int real_baud=FOSC/8/(presc+1);
+	if(real_baud!=baud){
+		fprintf(stderr, "Note: cannot select baud=%d, selected %d instead.\n", baud, real_baud);
+	}
 	send[1]=presc>>8;
 	send[0]=presc&0xFF;
 	send[2]=flags&0xFF;
@@ -78,6 +84,7 @@ int usbasp_uart_write_all(USBasp_UART* usbasp, uint8_t* buff, int len){
 		int rv=usbasp_uart_write(usbasp, buff+i, len-i);
 		if(rv<0){ dprintf("write_all: rv=%d\n", rv); return rv; }
 		i+=rv;
+		dprintf("write_all: %d/%d sent\n", i, len);
 	}
 	return len;
 }
@@ -110,7 +117,7 @@ int usbasp_uart_open(USBasp_UART* usbasp){
 				usbasp->usbhandle=NULL;
 				continue;
 			}
-			dprintf("%s\n", str);
+			dprintf("Vendor: %s\n", str);
 			libusb_get_string_descriptor_ascii(usbasp->usbhandle, 
 					descriptor.iProduct & 0xff, str, sizeof(str));
 			if(strcmp("USBasp", (const char*)str)){
@@ -118,7 +125,7 @@ int usbasp_uart_open(USBasp_UART* usbasp){
 				usbasp->usbhandle=NULL;
 				continue;
 			}
-			dprintf("%s\n", str);
+			dprintf("Product: %s\n", str);
 			break;
 		}
 	}
