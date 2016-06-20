@@ -15,7 +15,11 @@ void writeTest(USBasp_UART* usbasp, int size){
 		if(c>'z'){ c='a'; }
 	}
 	auto start=std::chrono::high_resolution_clock::now();
-	usbasp_uart_write_all(usbasp, (uint8_t*)s.c_str(), s.size());
+	int rv;
+	if((rv=usbasp_uart_write_all(usbasp, (uint8_t*)s.c_str(), s.size()))<0){
+		fprintf(stderr, "Error %d while writing...\n", rv);
+		return;
+	}
 	auto finish=std::chrono::high_resolution_clock::now();
 	auto us=std::chrono::duration_cast<std::chrono::microseconds>(finish-start).count();
 	printf("%zu bytes sent in %zums\n", s.size(), us/1000);
@@ -39,7 +43,8 @@ void readTest(USBasp_UART* usbasp, size_t size){
 		int rv=usbasp_uart_read(usbasp, buff, sizeof(buff));
 		if(rv==0){ continue; } // Nothing is available for now.
 		else if(rv<0){
-			fprintf(stderr, "rv=%d\n", rv);
+			fprintf(stderr, "Error while reading, rv=%d\n", rv);
+			return;
 		}
 		else{
 			s+=std::string((char*)buff, rv);
@@ -179,6 +184,7 @@ int main(int argc, char** argv){
 		if(rv==USBASP_NO_CAPS){
 			fprintf(stderr, "USBasp has no UART capabilities.\n");
 		}
+		return -1;
 	}
 	if(should_test_read){
 		fprintf(stderr, "Reading...\n");
